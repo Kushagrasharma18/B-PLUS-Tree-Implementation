@@ -12,7 +12,7 @@ struct ppoly
 {
     int coeffarr[99];
     int highpower;
-} ;
+} ;hgnjgjg
 typedef struct ppoly *polynomial;
 void zeropolynimial(polynomial poly)
 {
