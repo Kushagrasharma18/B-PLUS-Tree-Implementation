@@ -533,11 +533,41 @@ int main() {
 
   root = NULL;
 
-  root = insert(root, 1234, "kush",1234,"alwar",50000);
-  root = insert(root, 3253, "deeksha",3252,"jaipur",45000);
-  root = insert(root, 25, "rupa",454755,"delhi",40000);
-  root = insert(root, 35, "gopal",453773,"noida",35000);
-  root = insert(root, 45, "ritu",457654,"bharatpur",30000);
+  root = insert(root,1122 , "Kush",1122,"alwar",500500);
+  root = insert(root,1123 , "Deeksha",1123,"jaipur",445000);
+  root = insert(root,1124 , "Rupa",1124,"delhi",400003);
+  root = insert(root,1125 , "Gopal",1125,"noida",35000);
+  root = insert(root,1126 , "Ritu",1126,"bharatpur",30000);
+  root = insert(root,1127 , "Kushi",1127," tigri",90000);
+  root = insert(root,1128 , "Deepak",1128,"saket",415000);
+  root = insert(root,1129 , "Ruhi",1129,"ropar",400020);
+  root = insert(root,1130 , "Govind",1130,"khanpur",315000);
+  root = insert(root,1131 , "Reena",1131,"pune",300000);
+  root = insert(root,1132 , "Karishma",1132,"bombay",510000);
+  root = insert(root,1133 , "Seema",1133,"hyderabad",452000);
+  root = insert(root,1134 , "Ritika",1134,"sikar",400003);
+  root = insert(root,1135 , "Taniya",1135,"kota",350009);
+  root = insert(root,1136 , "Radha",1136,"ahmbdabad",309000);
+  root = insert(root,1137, "Disha",1137,"bikaner",500007);
+  root = insert(root,1138 , "Nikhil",1138,"jodhpur",450090);
+  root = insert(root,1222 , "Rohan",1222,"Indore",940000);
+  root = insert(root,1223 , "Gourhari",1223,"pune",1235000);
+  root = insert(root,1224 , "Rishi",1224,"bharatpur",1230000);
+  root = insert(root,1225 , "Himanshu",1225,"alwar",1150000);
+  root = insert(root,1226 , "Diva",1226,"jaipur",405000);
+  root = insert(root,1227 , "Sita",1227,"delhi",140000);
+  root = insert(root,1228, "Sheetal",1228,"noida",1135000);
+  root = insert(root,1229 , "Anushka",1229,"bharatpur",1230000);
+  root = insert(root,1230 , "Roshani",1230,"kashmir",500000);
+  root = insert(root, 1231, "Ayushi",1231,"poulara",450000);
+  root = insert(root, 1232, "Kirtdeep",1232,"srinagar",1140000);
+  root = insert(root,1233 , "Harshita",1233,"goa",1235000);
+  root = insert(root, 1234, "Ridhi",1234,"bantalab",1230000);
+  root = insert(root, 1235, "Siddhi",1235,"bhopal",5002200);
+  root = insert(root,1236 , "Sneha",1236,"vrindavan",4502200);
+  root = insert(root,1237 , "Tanishk",1237,"banaras",1400001);
+  root = insert(root,1238 , "Gouri",1238,"patna",3500011);
+  root = insert(root,1239 , "Priya",1239,"kharagpur",1130000);
 
   printf("\n\t\tWelcome to our site!!\n\n");
   printf("Please select any of the following options:\n ");
