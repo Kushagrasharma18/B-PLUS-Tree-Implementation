@@ -1,5 +1,3 @@
-// Searching on a B+ Tree in C
-
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
