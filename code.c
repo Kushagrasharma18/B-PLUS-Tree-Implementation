@@ -1,316 +1,611 @@
-# B+ tee in python
+// Searching on a B+ Tree in C
 
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-import math
+// Default order
+#define ORDER 3
 
-# Node creation
-class Node:
-    def __init__(self, order):
-        self.order = order
-        self.values = []
-        self.keys = []
-        self.nextKey = None
-        self.parent = None
-        self.check_leaf = False
+typedef struct data  {
+  char *name;
+  int employeeID;
+  char * city;
+  int salary;
+} data;
 
-    # Insert at the leaf
-    def insert_at_leaf(self, leaf, value, key):
-        if (self.values):
-            temp1 = self.values
-            for i in range(len(temp1)):
-                if (value == temp1[i]):
-                    self.keys[i].append(key)
-                    break
-                elif (value < temp1[i]):
-                    self.values = self.values[:i] + [value] + self.values[i:]
-                    self.keys = self.keys[:i] + [[key]] + self.keys[i:]
-                    break
-                elif (i + 1 == len(temp1)):
-                    self.values.append(value)
-                    self.keys.append([key])
-                    break
-        else:
-            self.values = [value]
-            self.keys = [[key]]
+// Node
+typedef struct node {
+  void **child;
+  int *keys;
+  struct node *parent;
+  bool is_leaf;
+  int num_keys;
+  struct node *next;
+} node;
 
+int order = ORDER;
+node *queue = NULL;
+bool flag_output = false;
 
-# B plus tree
-class BplusTree:
-    def __init__(self, order):
-        self.root = Node(order)
-        self.root.check_leaf = True
+// Enqueue
+void enqueue(node *new_node);
 
-    # Insert operation
-    def insert(self, value, key):
-        value = str(value)
-        old_node = self.search(value)
-        old_node.insert_at_leaf(old_node, value, key)
+// Dequeue
+node *dequeue(void);
+int height(node *const root);
+int pathToLeaves(node *const root, node *child);
+void printLeaves(node *const root);
+void printTree(node *const root);
+void findAndPrint(node *const root, int key, bool flag);
+node *findLeaf(node *const root, int key, bool flag);
+data *find(node *root, int key, bool flag, node **leaf_out);
+int cut(int length);
 
-        if (len(old_node.values) == old_node.order):
-            node1 = Node(old_node.order)
-            node1.check_leaf = True
-            node1.parent = old_node.parent
-            mid = int(math.ceil(old_node.order / 2)) - 1
-            node1.values = old_node.values[mid + 1:]
-            node1.keys = old_node.keys[mid + 1:]
-            node1.nextKey = old_node.nextKey
-            old_node.values = old_node.values[:mid + 1]
-            old_node.keys = old_node.keys[:mid + 1]
-            old_node.nextKey = node1
-            self.insert_in_parent(old_node, node1.values[0], node1)
+data *makedata(char* name,int id,char * city,int a);
+node *makeNode(void);
+node *makeLeaf(void);
+int getLeftIndex(node *parent, node *left);
+node *insertIntoLeaf(node *leaf, int key, data *pointer);
+node *insertIntoLeafAfterSplitting(node *root, node *leaf, int key,
+                   data *pointer);
+node *insertIntoNode(node *root, node *parent,
+           int left_index, int key, node *right);
+node *insertIntoNodeAfterSplitting(node *root, node *parent,
+                   int left_index,
+                   int key, node *right);
+node *insertIntoParent(node *root, node *left, int key, node *right);
+node *insertIntoNewRoot(node *left, int key, node *right);
+node *startNewTree(int key, data *pointer);
+node *insert(node *root, int key, char* name,int id,char * city,int a);
 
-    # Search operation for different operations
-    def search(self, value):
-        current_node = self.root
-        while(current_node.check_leaf == False):
-            temp2 = current_node.values
-            for i in range(len(temp2)):
-                if (value == temp2[i]):
-                    current_node = current_node.keys[i + 1]
-                    break
-                elif (value < temp2[i]):
-                    current_node = current_node.keys[i]
-                    break
-                elif (i + 1 == len(current_node.values)):
-                    current_node = current_node.keys[i + 1]
-                    break
-        return current_node
+// Enqueue
+void enqueue(node *new_node) {
+  node *c;
+  if (queue == NULL) {
+    queue = new_node;
+    queue->next = NULL;
+  } else {
+    c = queue;
+    while (c->next != NULL) {
+      c = c->next;
+    }
+    c->next = new_node;
+    new_node->next = NULL;
+  }
+}
 
-    # Find the node
-    def find(self, value, key):
-        l = self.search(value)
-        for i, item in enumerate(l.values):
-            if item == value:
-                if key in l.keys[i]:
-                    return True
-                else:
-                    return False
-        return False
+// Dequeue
+node *dequeue(void) {
+  node *n = queue;
+  queue = queue->next;
+  n->next = NULL;
+  return n;
+}
 
-    # Inserting at the parent
-    def insert_in_parent(self, n, value, ndash):
-        if (self.root == n):
-            rootNode = Node(n.order)
-            rootNode.values = [value]
-            rootNode.keys = [n, ndash]
-            self.root = rootNode
-            n.parent = rootNode
-            ndash.parent = rootNode
-            return
+// Print the leaves
+void printLeaves(node *const root) {
+  if (root == NULL) {
+    printf("Empty tree.\n");
+    return;
+  }
+  int i;
+  node *c = root;
+  while (!c->is_leaf)
+    c = c->child[0];
+  while (true) {
+    for (i = 0; i < c->num_keys; i++) {
+      if (flag_output)
+        printf("%p ", c->child[i]);
+      printf("%d ", c->keys[i]);
+    }
+    if (flag_output)
+      printf("%p ", c->child[order - 1]);
+    if (c->child[order - 1] != NULL) {
+      printf(" | ");
+      c = c->child[order - 1];
+    } else
+      break;
+  }
+  printf("\n");
+}
 
-        parentNode = n.parent
-        temp3 = parentNode.keys
-        for i in range(len(temp3)):
-            if (temp3[i] == n):
-                parentNode.values = parentNode.values[:i] + \
-                    [value] + parentNode.values[i:]
-                parentNode.keys = parentNode.keys[:i +
-                                                  1] + [ndash] + parentNode.keys[i + 1:]
-                if (len(parentNode.keys) > parentNode.order):
-                    parentdash = Node(parentNode.order)
-                    parentdash.parent = parentNode.parent
-                    mid = int(math.ceil(parentNode.order / 2)) - 1
-                    parentdash.values = parentNode.values[mid + 1:]
-                    parentdash.keys = parentNode.keys[mid + 1:]
-                    value_ = parentNode.values[mid]
-                    if (mid == 0):
-                        parentNode.values = parentNode.values[:mid + 1]
-                    else:
-                        parentNode.values = parentNode.values[:mid]
-                    parentNode.keys = parentNode.keys[:mid + 1]
-                    for j in parentNode.keys:
-                        j.parent = parentNode
-                    for j in parentdash.keys:
-                        j.parent = parentdash
-                    self.insert_in_parent(parentNode, value_, parentdash)
+// Calculate height
+int height(node *const root) {
+  int h = 0;
+  node *c = root;
+  while (!c->is_leaf) {
+    c = c->child[0];
+    h++;
+  }
+  return h;
+}
 
-    # Delete a node
-    def delete(self, value, key):
-        node_ = self.search(value)
+// Get path to root
+int pathToLeaves(node *const root, node *child) {
+  int length = 0;
+  node *c = child;
+  while (c != root) {
+    c = c->parent;
+    length++;
+  }
+  return length;
+}
 
-        temp = 0
-        for i, item in enumerate(node_.values):
-            if item == value:
-                temp = 1
+// Print the tree
+void printTree(node *const root) {
+  node *n = NULL;
+  int i = 0;
+  int rank = 0;
+  int new_rank = 0;
 
-                if key in node_.keys[i]:
-                    if len(node_.keys[i]) > 1:
-                        node_.keys[i].pop(node_.keys[i].index(key))
-                    elif node_ == self.root:
-                        node_.values.pop(i)
-                        node_.keys.pop(i)
-                    else:
-                        node_.keys[i].pop(node_.keys[i].index(key))
-                        del node_.keys[i]
-                        node_.values.pop(node_.values.index(value))
-                        self.deleteEntry(node_, value, key)
-                else:
-                    print("Value not in Key")
-                    return
-        if temp == 0:
-            print("Value not in Tree")
-            return
+  if (root == NULL) {
+    printf("Empty tree.\n");
+    return;
+  }
+  queue = NULL;
+  enqueue(root);
+  while (queue != NULL) {
+    n = dequeue();
+    if (n->parent != NULL && n == n->parent->child[0]) {
+      new_rank = pathToLeaves(root, n);
+      if (new_rank != rank) {
+        rank = new_rank;
+        printf("\n");
+      }
+    }
+    if (flag_output)
+      printf("(%p)", n);
+    for (i = 0; i < n->num_keys; i++) {
+      if (flag_output)
+        printf("%p ", n->child[i]);
+      printf("%d ", n->keys[i]);
+    }
+    if (!n->is_leaf)
+      for (i = 0; i <= n->num_keys; i++)
+        enqueue(n->child[i]);
+    if (flag_output) {
+      if (n->is_leaf)
+        printf("%p ", n->child[order - 1]);
+      else
+        printf("%p ", n->child[n->num_keys]);
+    }
+    printf("| ");
+  }
+  printf("\n");
+}
 
-    # Delete an entry
-    def deleteEntry(self, node_, value, key):
+// Find the node and print it
+void findAndPrint(node *const root, int key, bool flag) {
+  node *leaf = NULL;
+  data *r = find(root, key, flag, NULL);
+  if (r == NULL)
+    printf("data not found under key %d.\n", key);
+  else
+    printf("\nEmployeeID: %d\nName: %s\ncity: %s\nsalary: %d\n",
+          r->employeeID,r->name,r->city,r->salary);
+}
 
-        if not node_.check_leaf:
-            for i, item in enumerate(node_.keys):
-                if item == key:
-                    node_.keys.pop(i)
-                    break
-            for i, item in enumerate(node_.values):
-                if item == value:
-                    node_.values.pop(i)
-                    break
+// Find the range
 
-        if self.root == node_ and len(node_.keys) == 1:
-            self.root = node_.keys[0]
-            node_.keys[0].parent = None
-            del node_
-            return
-        elif (len(node_.keys) < int(math.ceil(node_.order / 2)) and node_.check_leaf == False) or (len(node_.values) < int(math.ceil((node_.order - 1) / 2)) and node_.check_leaf == True):
+// Find the leaf
+node *findLeaf(node *const root, int key, bool flag) {
+  if (root == NULL) {
+    if (flag)
+      printf("Empty tree.\n");
+    return root;
+  }
+  int i = 0;
+  node *c = root;
+  while (!c->is_leaf) {
+    if (flag) {
+      printf("[");
+      for (i = 0; i < c->num_keys - 1; i++)
+        printf("%d ", c->keys[i]);
+      printf("%d] ", c->keys[i]);
+    }
+    i = 0;
+    while (i < c->num_keys) {
+      if (key >= c->keys[i])
+        i++;
+      else
+        break;
+    }
+    if (flag)
+      printf("%d ->\n", i);
+    c = (node *)c->child[i];
+  }
+  if (flag) {
+    printf("Leaf [");
+    for (i = 0; i < c->num_keys - 1; i++)
+      printf("%d ", c->keys[i]);
+    printf("%d] ->\n", c->keys[i]);
+  }
+  return c;
+}
 
-            is_predecessor = 0
-            parentNode = node_.parent
-            PrevNode = -1
-            NextNode = -1
-            PrevK = -1
-            PostK = -1
-            for i, item in enumerate(parentNode.keys):
+data *find(node *root, int key, bool flag, node **leaf_out) {
+  if (root == NULL) {
+    if (leaf_out != NULL) {
+      *leaf_out = NULL;
+    }
+    return NULL;
+  }
 
-                if item == node_:
-                    if i > 0:
-                        PrevNode = parentNode.keys[i - 1]
-                        PrevK = parentNode.values[i - 1]
+  int i = 0;
+  node *leaf = NULL;
+  leaf = findLeaf(root, key, flag);
 
-                    if i < len(parentNode.keys) - 1:
-                        NextNode = parentNode.keys[i + 1]
-                        PostK = parentNode.values[i]
+  for (i = 0; i < leaf->num_keys; i++)
+    if (leaf->keys[i] == key)
+      break;
+  if (leaf_out != NULL) {
+    *leaf_out = leaf;
+  }
+  if (i == leaf->num_keys)
+    return NULL;
+  else
+    return (data *)leaf->child[i];
+}
 
-            if PrevNode == -1:
-                ndash = NextNode
-                value_ = PostK
-            elif NextNode == -1:
-                is_predecessor = 1
-                ndash = PrevNode
-                value_ = PrevK
-            else:
-                if len(node_.values) + len(NextNode.values) < node_.order:
-                    ndash = NextNode
-                    value_ = PostK
-                else:
-                    is_predecessor = 1
-                    ndash = PrevNode
-                    value_ = PrevK
+int cut(int length) {
+  if (length % 2 == 0)
+    return length / 2;
+  else
+    return length / 2 + 1;
+}
 
-            if len(node_.values) + len(ndash.values) < node_.order:
-                if is_predecessor == 0:
-                    node_, ndash = ndash, node_
-                ndash.keys += node_.keys
-                if not node_.check_leaf:
-                    ndash.values.append(value_)
-                else:
-                    ndash.nextKey = node_.nextKey
-                ndash.values += node_.values
+data *makedata(char* name,int id,char * city,int a) {
+  data *new_data = (data *)malloc(sizeof(data));
+  if (new_data == NULL) {
+    perror("data creation.");
+    exit(EXIT_FAILURE);
+  } else {
+    new_data->name = name;
+    new_data->employeeID = id;
+    new_data->city = city;
+    new_data->salary = a;
+    
+  }
+  return new_data;
+}
 
-                if not ndash.check_leaf:
-                    for j in ndash.keys:
-                        j.parent = ndash
+node *makeNode(void) {
+  node *new_node;
+  new_node = malloc(sizeof(node));
+  if (new_node == NULL) {
+    perror("Node creation.");
+    exit(EXIT_FAILURE);
+  }
+  new_node->keys = malloc((order - 1) * sizeof(int));
+  if (new_node->keys == NULL) {
+    perror("New node keys array.");
+    exit(EXIT_FAILURE);
+  }
+  new_node->child = malloc(order * sizeof(void *));
+  if (new_node->child == NULL) {
+    perror("New node child array.");
+    exit(EXIT_FAILURE);
+  }
+  new_node->is_leaf = false;
+  new_node->num_keys = 0;
+  new_node->parent = NULL;
+  new_node->next = NULL;
+  return new_node;
+}
 
-                self.deleteEntry(node_.parent, value_, node_)
-                del node_
-            else:
-                if is_predecessor == 1:
-                    if not node_.check_leaf:
-                        ndashpm = ndash.keys.pop(-1)
-                        ndashkm_1 = ndash.values.pop(-1)
-                        node_.keys = [ndashpm] + node_.keys
-                        node_.values = [value_] + node_.values
-                        parentNode = node_.parent
-                        for i, item in enumerate(parentNode.values):
-                            if item == value_:
-                                p.values[i] = ndashkm_1
-                                break
-                    else:
-                        ndashpm = ndash.keys.pop(-1)
-                        ndashkm = ndash.values.pop(-1)
-                        node_.keys = [ndashpm] + node_.keys
-                        node_.values = [ndashkm] + node_.values
-                        parentNode = node_.parent
-                        for i, item in enumerate(p.values):
-                            if item == value_:
-                                parentNode.values[i] = ndashkm
-                                break
-                else:
-                    if not node_.check_leaf:
-                        ndashp0 = ndash.keys.pop(0)
-                        ndashk0 = ndash.values.pop(0)
-                        node_.keys = node_.keys + [ndashp0]
-                        node_.values = node_.values + [value_]
-                        parentNode = node_.parent
-                        for i, item in enumerate(parentNode.values):
-                            if item == value_:
-                                parentNode.values[i] = ndashk0
-                                break
-                    else:
-                        ndashp0 = ndash.keys.pop(0)
-                        ndashk0 = ndash.values.pop(0)
-                        node_.keys = node_.keys + [ndashp0]
-                        node_.values = node_.values + [ndashk0]
-                        parentNode = node_.parent
-                        for i, item in enumerate(parentNode.values):
-                            if item == value_:
-                                parentNode.values[i] = ndash.values[0]
-                                break
+node *makeLeaf(void) {
+  node *leaf = makeNode();
+  leaf->is_leaf = true;
+  return leaf;
+}
 
-                if not ndash.check_leaf:
-                    for j in ndash.keys:
-                        j.parent = ndash
-                if not node_.check_leaf:
-                    for j in node_.keys:
-                        j.parent = node_
-                if not parentNode.check_leaf:
-                    for j in parentNode.keys:
-                        j.parent = parentNode
+int getLeftIndex(node *parent, node *left) {
+  int left_index = 0;
+  while (left_index <= parent->num_keys &&
+       parent->child[left_index] != left)
+    left_index++;
+  return left_index;
+}
 
+node *insertIntoLeaf(node *leaf, int key, data *pointer) {
+  int i, insertion_point;
 
-# Print the tree
-def printTree(tree):
-    lst = [tree.root]
-    level = [0]
-    leaf = None
-    flag = 0
-    lev_leaf = 0
+  insertion_point = 0;
+  while (insertion_point < leaf->num_keys && leaf->keys[insertion_point] < key)
+    insertion_point++;
 
-    node1 = Node(str(level[0]) + str(tree.root.values))
+  for (i = leaf->num_keys; i > insertion_point; i--) {
+    leaf->keys[i] = leaf->keys[i - 1];
+    leaf->child[i] = leaf->child[i - 1];
+  }
+  leaf->keys[insertion_point] = key;
+  leaf->child[insertion_point] = pointer;
+  leaf->num_keys++;
+  return leaf;
+}
 
-    while (len(lst) != 0):
-        x = lst.pop(0)
-        lev = level.pop(0)
-        if (x.check_leaf == False):
-            for i, item in enumerate(x.keys):
-                print(item.values)
-        else:
-            for i, item in enumerate(x.keys):
-                print(item.values)
-            if (flag == 0):
-                lev_leaf = lev
-                leaf = x
-                flag = 1
+node *insertIntoLeafAfterSplitting(node *root, node *leaf, int key, data *pointer) {
+  node *new_leaf;
+  int *temp_keys;
+  void **temp_child;
+  int insertion_index, split, new_key, i, j;
 
+  new_leaf = makeLeaf();
 
-record_len = 3
-bplustree = BplusTree(record_len)
-bplustree.insert('5', '33')
-bplustree.insert('15', '21')
-bplustree.insert('25', '31')
-bplustree.insert('35', '41')
-bplustree.insert('45', '10')
+  temp_keys = malloc(order * sizeof(int));
+  if (temp_keys == NULL) {
+    perror("Temporary keys array.");
+    exit(EXIT_FAILURE);
+  }
 
-printTree(bplustree)
+  temp_child = malloc(order * sizeof(void *));
+  if (temp_child == NULL) {
+    perror("Temporary child array.");
+    exit(EXIT_FAILURE);
+  }
 
-if(bplustree.find('5', '34')):
-    print("Found")
-else:
-    print("Not found")
+  insertion_index = 0;
+  while (insertion_index < order - 1 && leaf->keys[insertion_index] < key)
+    insertion_index++;
+
+  for (i = 0, j = 0; i < leaf->num_keys; i++, j++) {
+    if (j == insertion_index)
+      j++;
+    temp_keys[j] = leaf->keys[i];
+    temp_child[j] = leaf->child[i];
+  }
+
+  temp_keys[insertion_index] = key;
+  temp_child[insertion_index] = pointer;
+
+  leaf->num_keys = 0;
+
+  split = cut(order - 1);
+
+  for (i = 0; i < split; i++) {
+    leaf->child[i] = temp_child[i];
+    leaf->keys[i] = temp_keys[i];
+    leaf->num_keys++;
+  }
+
+  for (i = split, j = 0; i < order; i++, j++) {
+    new_leaf->child[j] = temp_child[i];
+    new_leaf->keys[j] = temp_keys[i];
+    new_leaf->num_keys++;
+  }
+
+  free(temp_child);
+  free(temp_keys);
+
+  new_leaf->child[order - 1] = leaf->child[order - 1];
+  leaf->child[order - 1] = new_leaf;
+
+  for (i = leaf->num_keys; i < order - 1; i++)
+    leaf->child[i] = NULL;
+  for (i = new_leaf->num_keys; i < order - 1; i++)
+    new_leaf->child[i] = NULL;
+
+  new_leaf->parent = leaf->parent;
+  new_key = new_leaf->keys[0];
+
+  return insertIntoParent(root, leaf, new_key, new_leaf);
+}
+
+node *insertIntoNode(node *root, node *n,
+           int left_index, int key, node *right) {
+  int i;
+
+  for (i = n->num_keys; i > left_index; i--) {
+    n->child[i + 1] = n->child[i];
+    n->keys[i] = n->keys[i - 1];
+  }
+  n->child[left_index + 1] = right;
+  n->keys[left_index] = key;
+  n->num_keys++;
+  return root;
+}
+
+node *insertIntoNodeAfterSplitting(node *root, node *old_node, int left_index,
+                   int key, node *right) {
+  int i, j, split, k_prime;
+  node *new_node, *child;
+  int *temp_keys;
+  node **temp_child;
+
+  temp_child = malloc((order + 1) * sizeof(node *));
+  if (temp_child == NULL) {
+    exit(EXIT_FAILURE);
+  }
+  temp_keys = malloc(order * sizeof(int));
+  if (temp_keys == NULL) {
+    exit(EXIT_FAILURE);
+  }
+
+  for (i = 0, j = 0; i < old_node->num_keys + 1; i++, j++) {
+    if (j == left_index + 1)
+      j++;
+    temp_child[j] = old_node->child[i];
+  }
+
+  for (i = 0, j = 0; i < old_node->num_keys; i++, j++) {
+    if (j == left_index)
+      j++;
+    temp_keys[j] = old_node->keys[i];
+  }
+
+  temp_child[left_index + 1] = right;
+  temp_keys[left_index] = key;
+
+  split = cut(order);
+  new_node = makeNode();
+  old_node->num_keys = 0;
+  for (i = 0; i < split - 1; i++) {
+    old_node->child[i] = temp_child[i];
+    old_node->keys[i] = temp_keys[i];
+    old_node->num_keys++;
+  }
+  old_node->child[i] = temp_child[i];
+  k_prime = temp_keys[split - 1];
+  for (++i, j = 0; i < order; i++, j++) {
+    new_node->child[j] = temp_child[i];
+    new_node->keys[j] = temp_keys[i];
+    new_node->num_keys++;
+  }
+  new_node->child[j] = temp_child[i];
+  free(temp_child);
+  free(temp_keys);
+  new_node->parent = old_node->parent;
+  for (i = 0; i <= new_node->num_keys; i++) {
+    child = new_node->child[i];
+    child->parent = new_node;
+  }
+
+  return insertIntoParent(root, old_node, k_prime, new_node);
+}
+
+node *insertIntoParent(node *root, node *left, int key, node *right) {
+  int left_index;
+  node *parent;
+
+  parent = left->parent;
+
+  if (parent == NULL)
+    return insertIntoNewRoot(left, key, right);
+
+  left_index = getLeftIndex(parent, left);
+
+  if (parent->num_keys < order - 1)
+    return insertIntoNode(root, parent, left_index, key, right);
+
+  return insertIntoNodeAfterSplitting(root, parent, left_index, key, right);
+}
+
+node *insertIntoNewRoot(node *left, int key, node *right) {
+  node *root = makeNode();
+  root->keys[0] = key;
+  root->child[0] = left;
+  root->child[1] = right;
+  root->num_keys++;
+  root->parent = NULL;
+  left->parent = root;
+  right->parent = root;
+  return root;
+}
+
+node *startNewTree(int key, data *pointer) {
+  node *root = makeLeaf();
+  root->keys[0] = key;
+  root->child[0] = pointer;
+  root->child[order - 1] = NULL;
+  root->parent = NULL;
+  root->num_keys++;
+  return root;
+}
+
+node *insert(node *root, int key, char* name,int id,char * city,int a) {
+  data *data_pointer = NULL;
+  node *leaf = NULL;
+
+  data_pointer = find(root, key, false, NULL);
+  if (data_pointer != NULL) {
+    data_pointer->name = name;
+    return root;
+  }
+
+  data_pointer = makedata(name,id,city,a);
+
+  if (root == NULL)
+    return startNewTree(key, data_pointer);
+
+  leaf = findLeaf(root, key, false);
+
+  if (leaf->num_keys < order - 1) {
+    leaf = insertIntoLeaf(leaf, key, data_pointer);
+    return root;
+  }
+
+  return insertIntoLeafAfterSplitting(root, leaf, key, data_pointer);
+}
+
+int main() {
+  node *root;
+  char instruction;
+
+  root = NULL;
+
+  root = insert(root, 1234, "kush",1234,"alwar",50000);
+  root = insert(root, 3253, "deeksha",3252,"jaipur",45000);
+  root = insert(root, 25, "rupa",454755,"delhi",40000);
+  root = insert(root, 35, "gopal",453773,"noida",35000);
+  root = insert(root, 45, "ritu",457654,"bharatpur",30000);
+
+  printf("\n\t\tWelcome to our site!!\n\n");
+  printf("Please select any of the following options:\n ");
+
+printf("\nPress 1: Inserting the data of a new Employee to server");
+        // printf("\n2: Delete");
+        printf("\nPress 2: Searching the data of a Employee\n");
+        // printf("\n4: Display");
+        printf("Press 3: Display of B+ tree");
+        printf("\npress 4: quitting the program");
+        // printf("\n\nEnter your choice: ");
+    printf("\n\nEnter your choice: ");
+    int c;
+
+    scanf("%d", &c);
+    while (1)//performing the action as per user's choice
+    {
+        if (c == 1)
+        {
+          printf("Please enter the 4 digit Employee id: ");
+          int i;
+          scanf("%d",&i);
+          printf("Please enter name of employee: ");
+          char n[100];
+          scanf("%s",n);
+          printf("Please enter city of employee: ");
+          char c[100];
+          scanf("%s",c);
+          printf("Please enter the salary of employee: ");
+          int g;
+          scanf("%d",&g);
+          root =insert(root,i,n,i,c,g);
+          
+        }
+        else if (c == 2)
+        {
+          printf("Please enter the 4 digit Employee id: ");
+          int f;
+          scanf("%d",&f);
+          findAndPrint(root,f,false);
+
+           
+        }
+        else if(c==3)
+        {
+   printTree(root);
+
+        }
+        else if (c == 4)
+        {
+           
+            break;
+        }
+      
+        else
+        printf("Invalid choice !!Please choose a valid option!!\n");
+        printf("\nPress 1: Inserting the data of a new Employee to server");
+        // printf("\n2: Delete");
+        printf("\nPress 2: Searching the data of a Employee\n");
+        // printf("\n4: Display");
+        printf("Press 3: Display of B+ tree");
+
+        
+        printf("\npress 4: quitting the program");
+        printf("\n\nEnter your choice: ");
+        scanf("%d", &c);
+    }
+    printf("\nProgram terminated!!\n");
+}
