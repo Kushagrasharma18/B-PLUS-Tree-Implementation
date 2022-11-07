@@ -6,6 +6,7 @@ Rakesh Meena(2021csb1126)
 
 
 Instructor: Dr. Anil Shuka
+
 Teaching Assistent: Mr Avadhesh Gaur
 
 B+ Tree Implementation and Analysis(CS_201 Project)
@@ -17,7 +18,9 @@ to use B+ tree over other data structures.
 
 Average Time Complexity:
 Search : O(logn)
+
 Insetion: O(logn)
+
 Deletion: O(logn)
 
 ** expected input and outputs**
