@@ -23,6 +23,7 @@ Insetion: O(logn)
 
 Deletion: O(logn)
 
-** expected input and outputs**
+** Expected input and outputs**
+
 we have already stored data of some employees to our server. First a query will b or he e asked to user whether he want to insert data of some new employee then he will
 select corresponding key and insert the data of employee according to instructions or if he want to find data of a particular employee he will enter employee id and will get data of employee or if he wants to see data of all employees of company he will select corresponding key.Finally if user wants to exit the program he can do it by selecting exit key.
