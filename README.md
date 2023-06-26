@@ -1,4 +1,4 @@
-# B+ TREES-IMPLEMENTATION
+# B+ TREE-IMPLEMENTATION
 Team Members
 Kushagra Sharma (2021csb1107)
 Rupa (2021mcb1242)
