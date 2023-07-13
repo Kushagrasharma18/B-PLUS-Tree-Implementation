@@ -16,7 +16,7 @@ operations like insertion,search ,displaying tree and have also studied about de
 running time costs of operations like insertion,search and deletion. We have understood all the advantages of B+ which insist us
 to use B+ tree over other data structures.
 
-Average Time Complexity:
+Average Time Complexity :
 Search : O(logn)
 
 Insetion: O(logn)
